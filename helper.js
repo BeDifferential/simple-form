@@ -1,46 +1,23 @@
-processClass = function(optionsHash) {
-  if (!optionsHash) {
-    return
-  }
-  if (optionsHash['class']) {
-    html_class = " " + optionsHash['class']
-  } else {
-    html_class = ""
-  }
-  return html_class
-}
+processAttributes = function(optionHash) {
+  var attr = [], bool = ['novalidate', 'autofocus', 'formnovalidate', 'multiple', 'required'];
 
-processRequired = function(optionHash) {
-  if (optionHash['required']) {
-    return " required"
-  } else {
-    return ""
-  }
-}
+  attr = _.map(optionHash, function(value, key) {
+    if (_.contains(bool, key)) {
+      // boolean attributes like <input required>
+      return key;
+    } else {
+      // normal attributes like <input autocomplete="off">
+      return key + '="' + value + '"';
+    }
+  });
 
-processId = function(optionsHash) {
-  if (!optionsHash) {
-    return
-  }
-  if (optionsHash['id']) {
-    return " id='" + optionsHash['id'] + "'";
-  } else {
-    return ""
-  }
-}
-
-processPlaceHolder = function(optionsHash) {
-  if (optionsHash['placeholder']) {
-    placeholder = " placeholder='" + optionsHash['placeholder'] + "' "
-  } else {
-    placeholder = ""
-  }
-  return placeholder
+  return attr.join(' ');
 }
 
 processLabel = function(optionsHash, field) {
   if (_.isString(optionsHash['label'])) {
     label_words = optionsHash['label']
+    delete optionsHash['label'];
   } else {
     label_words = _.humanize(field)
   }
@@ -59,6 +36,7 @@ buildLabel = function(optionsHash, field) {
 buildHintBlock = function(optionsHash) {
   if (optionsHash['hint']) {
     hintBlock = "<span class='help-block'>" + optionsHash['hint'] + "</span>";
+    delete optionsHash['hint'];
   } else {
     hintBlock = "";
   }
@@ -126,10 +104,14 @@ processForHaBTM = function(field, object) {
 buildAssociationCheckboxes = function(field, object, checkboxes, options) {
   return false
   builtCheckboxes = _.map(checkboxes, function(checkbox) {
-    html_class = processClass(options.hash)
+    attributes = processAttributes(_.extend(options.hash, {
+      name: checkbox.name,
+      value: checkbox.value
+    }));
     checked = _.contains(object[_.singularize(field) + '_ids'], checkbox.value) === true ? ' checked' : '';
     label = processLabel(options.hash, checkbox.name)
-    html = "<label for='"+ checkbox.name +"'><input id='"+ checkbox.name +"' name='" + checkbox.name + "' type='hidden' value='false'><input name='" + checkbox.name + "' class='"+ html_class +"' type='checkbox' value='" + checkbox.value + "' " + checked + ">" + label + "</label>";
+    html = "<label for='"+ checkbox.name +"'><input id='"+ checkbox.name +"' name='" + checkbox.name + "' type='hidden' value='false'>";
+    html += "<input " + attributes + " type='checkbox'" + checked + ">" + label + "</label>";
     return html;
   });
   return new Spacebars.SafeString(builtCheckboxes.join(' '));
@@ -142,15 +124,17 @@ UI.registerHelper('text_field', function(field, options){
   if (!field) {
     return;
   }
+  _.defaults(options.hash, {
+    class: 'form-control',
+    type: 'text'
+  });
   value = _this[field] || ""
-  html_class = processClass(options.hash)
-  type = options.hash['type'] || "text"
+  type = options.hash['type']
   if (value && type === "date" && value.constructor === Date) {
     value = value.getFullYear() + '-' + ('0' + (value.getMonth()+1)).slice(-2) + "-" + ('0' + value.getDate()).slice(-2)
   }
-  placeholder = processPlaceHolder(options.hash)
-  required = processRequired(options.hash)
-  html = "<input type='"+ type +"' id='" + field + "' name='"+ field +"' value='"+ value +"' class='form-control"+ html_class +"'"+ placeholder + required + " >"
+  attributes = processAttributes(options.hash);
+  html = "<input id='" + field + "' name='" + field + "' value='" + value + "' " + attributes + ">"
   label = buildLabel(options.hash, field)
   hint = buildHintBlock(options.hash)
   beforeAddon = buildBeforeAddon(options.hash)
@@ -163,18 +147,14 @@ UI.registerHelper('text_area', function(field, options){
   if (!field) {
     return;
   }
+  _.defaults(options.hash, {
+    class: 'form-control'
+  });
   value = _this[field] || ""
-  html_class = processClass(options.hash)
-  if (options.hash['rows']) {
-    rows = "rows='"+ options.hash['rows'] +"' "
-  } else {
-    rows = ""
-  }
-
-  required = processRequired(options.hash)
-  html = "<textarea id='" + field + "' "+ rows +"name='"+ field +"' class='form-control"+ html_class +"'" + required + ">"+ value +"</textarea>"
   label = buildLabel(options.hash, field)
   hint = buildHintBlock(options.hash)
+  attributes = processAttributes(options.hash);
+  html = "<textarea id='" + field + "' name='" + field + "' " + attributes + ">"+ value +"</textarea>"
   return new Spacebars.SafeString(label + html + hint);
 });
 
@@ -184,9 +164,11 @@ UI.registerHelper('select_box', function(field, options) {
   if (!field) {
     return;
   }
+  _.defaults(options.hash, {
+    class: 'form-control'
+  });
 
   associationOptions = processForBelongsTo(field, _this)
-  html_class = processClass(options.hash)
 
   if (associationOptions) {
     optionsValues = associationOptions
@@ -195,12 +177,12 @@ UI.registerHelper('select_box', function(field, options) {
     dbField = field
     if (options.hash.optionValues && options.hash.optionValues.length > 0) {
       optionsValues = options.hash.optionValues
+      delete options.hash.optionValues;
     } else {
       optionsValues = _this["" + field + "Options"]();
     }
   }
 
-  required = processRequired(options.hash)
   html_options = [];
   _.each(optionsValues, function(option) {
     name = option.name || _.humanize(option)
@@ -208,7 +190,8 @@ UI.registerHelper('select_box', function(field, options) {
     selected = _this[field] === value ? ' selected' : '';
     return html_options.push("<option value='" + value + "'" + selected + ">" + name + "</option>");
   });
-  html = "<select class='form-control" + html_class + "' name='" + dbField + "'" + required + ">" + (html_options.join('')) + "</select>"
+  attributes = processAttributes(options.hash);
+  html = "<select name='" + dbField + "'" + attributes + ">" + (html_options.join('')) + "</select>"
   label = buildLabel(options.hash, dbField)
   hint = buildHintBlock(options.hash)
   return new Spacebars.SafeString(label + html + hint);
@@ -224,11 +207,11 @@ UI.registerHelper('check_box', function(field, options) {
   if (associationOptions) {
     return buildAssociationCheckboxes(field, this, associationOptions, options)
   } else {
-    html_class = processClass(options.hash)
     checked = this[field] === 'true' ? ' checked' : '';
     label = processLabel(options.hash, field)
-    required = processRequired(options.hash)
-    html = "<label for='"+ field +"'><input id='"+ field +"' name='" + field + "' type='hidden' value='false'><input name='" + field + "' class='"+ html_class +"' type='checkbox' value='true' " + checked + required + ">" + label + "</label>";
+    attributes = processAttributes(options.hash);
+    html = "<label for='"+ field +"'><input id='"+ field +"' name='" + field + "' type='hidden' value='false'>";
+    html += "<input name='" + field + "' type='checkbox' value='true' " + checked + attributes + ">" + label + "</label>";
     hint = buildHintBlock(options.hash)
     return new Spacebars.SafeString(html + hint);
   }
@@ -262,6 +245,9 @@ UI.registerHelper('submit_button', function(text, options){
     options = text;
     text = undefined;
   }
+  _.defaults(options.hash, {
+    class: 'btn btn-default'
+  });
   klass = _this.constructor.name;
   if (_this._id) {
     actionWord = "Update "
@@ -269,12 +255,12 @@ UI.registerHelper('submit_button', function(text, options){
     actionWord = "Add "
   }
   value = text || actionWord + klass;
-  html_class = processClass(options.hash);
-  html_id = processId(options.hash);
   if (options.hash && options.hash['button']) {
-    html = "<button type='submit' class='btn btn-default"+ html_class + "'"+ html_id +">" + value + "</button>";
+    delete options.hash['button'];
+    attributes = processAttributes(options.hash);
+    html = "<button type='submit'" + processAttributes(options.hash) + ">" + value + "</button>";
   } else {
-    html = "<input type='submit' value='"+ value +"' class='btn btn-default"+ html_class + "'"+ html_id +">";
+    html = "<input type='submit' value='"+ value +"'" + processAttributes(options.hash) + ">";
   }
   return new Spacebars.SafeString(html);
 });
