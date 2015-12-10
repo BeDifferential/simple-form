@@ -12,6 +12,11 @@ Install the package in your Meteor project:
 mrt add simple-form
 ```
 
+__Please Note:__ From meteor version 1.0 onwards use 
+```
+meteor add joshowens:simple-form
+```
+
 ### 2. Set up the form
 Now, you can use the Simple Form helpers to automatically generate inputs and labels (currently the supported input types are `text_field`, `text_area`, `select_box`, `check_box`, `file_field` and `submit_button`):
 
