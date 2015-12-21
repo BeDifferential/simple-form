@@ -200,6 +200,7 @@ UI.registerHelper('select_box', function(field, options) {
     }
   }
 
+  optionsValues = JSON.parse(optionsValues);
   required = processRequired(options.hash)
   html_options = [];
   _.each(optionsValues, function(option) {
