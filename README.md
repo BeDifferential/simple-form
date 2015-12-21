@@ -50,8 +50,43 @@ Will generate:
 	<button type="submit" class="btn btn-primary">Add</button>
 </form>
 ```
+Note that the labels have been connected to the inputs automatically, and the field names have been ‘humanized’ to create readable label text. This ca
+n of course be customized, more on that later.
 
-Note that the labels have been connected to the inputs automatically, and the field names have been ‘humanized’ to create readable label text. This can of course be customized, more on that later.
+### 2.1 Set Up the form with select_box helper
+For options in select, you can pass `array` or `hash` as below:
+
+```html
+<form method="POST" role="form">
+	<legend>Add a project</legend>
+    <div class="form-group">
+        {{select_box 'payment_mode' optionValues='["Cheque","Cash","On Delivery"]' }}
+    </div>
+
+    <div class="form-group">
+        {{select_box 'payment_mode' optionValues='[{"name": "CHEQUE", "value": "Cheque"}, {"name": "CASH", "value": "Cash"}]' }}
+    </div>
+</form>
+```
+Will generate:
+```html
+  <div class="form-group">
+    <label for="payment_mode">Payment mode</label>
+    <select class="form-control" name="payment_mode">
+      <option value="Cheque">Cheque</option>
+      <option value="Cash">Cash</option>
+      <option value="On Delivery">On delivery</option>
+    </select>
+  </div>
+
+  <div class="form-group">
+    <label for="payment_mode">Payment mode</label>
+    <select class="form-control" name="payment_mode">
+      <option value="Cheque">CHEQUE</option>
+      <option value="Cash">CASH</option>
+    </select>
+  </div>
+```
 
 ### 3. Get the data
 
